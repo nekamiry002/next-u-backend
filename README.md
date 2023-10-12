@@ -10,4 +10,6 @@ PORT=4000
 
 After creating the .env, you will need to run the migrations. For doing so, run `npx knex migrate:latest` in your terminal
 
+To run your project you need to run `npm run dev` on your terminal.
+
 The only file that needs to be modified is user.js.
