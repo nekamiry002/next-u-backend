@@ -21,7 +21,19 @@ module.exports = async function (fastify, opts) {
     method: 'GET',
     preHandler: validateToken,
     handler: async (req, reply) => {
-      // add the route implementation here
+      try {
+        const userId = req.userId;
+        const user = user[userId];
+  
+        if (!user) {
+          reply.code(404).send({ error: 'User not found' });
+          return;
+        }
+  
+        reply.send({ user: { email: user.email, username: user.username, token: user.token } });
+      } catch (error) {
+        reply.code(500).send({ error: 'Server error' });
+      }
     }
   })
 
@@ -44,7 +56,31 @@ module.exports = async function (fastify, opts) {
     url: '/api/users',
     method: 'POST',
     handler: async (req, reply) => {
-      // add the route implementation here
+      try {
+        const { username, email, password } = req.body;
+  
+        if (users[username] || users[email]) {
+          reply.code(400).send({ error: 'Username or email already exists' });
+          return;
+        }
+
+        const hashedPassword = await hashString(password);
+        const token = await generateToken();
+
+        const newUser = {
+          username,
+          email,
+          token,
+          password: hashedPassword, 
+        };
+  
+        users[username] = newUser;
+        users[email] = newUser;
+
+        reply.send({ user: { email, username, token } });
+      } catch (error) {
+        reply.code(500).send({ error: 'Server error' });
+      }
     }
   })
 
@@ -66,7 +102,6 @@ module.exports = async function (fastify, opts) {
   // the request body should have a "message" field with the value "invalid credentials"
   // HINT: remember that all utility methods ( hashString and generateToken ) are asynchronous functions! they need to be used with "await"
   fastify.post('/api/users/login', async function (req, reply) {
-    // add the route implementation here
     const { email, password } = req.body.user
     const user = await database('user').where({ email }).first()
     const equal = await stringIsAMatch(password, user.password)
